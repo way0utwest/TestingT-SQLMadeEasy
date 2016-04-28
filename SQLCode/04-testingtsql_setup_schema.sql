@@ -857,3 +857,219 @@ CREATE TABLE UserTempPwd
 GO
 
 
+
+CREATE TABLE SalesOrderDetail
+( SalesOrderID INT
+, SalesOrderDetailID INT PRIMARY KEY NONCLUSTERED
+, OrderQuantity INT
+, ProductID INT
+, UnitPrice MONEY
+, DiscountPercent NUMERIC(10,4)
+, LineTotal MONEY
+, TaxAmount MONEY
+, ShippingState VARCHAR(3)
+);
+
+INSERT INTO dbo.SalesOrderDetail
+( SalesOrderID, SalesOrderDetailID, OrderQuantity, ProductID, UnitPrice, DiscountPercent, LineTotal, TaxAmount, ShippingState)
+VALUES  ( 1, 1, 10, 2, 10, 0.0, 100, 2, 'PA')
+      , ( 1, 2, 22, 3, 5, 0.1, 100, 5, 'GA')
+      , ( 2, 3, 5, 2, 4, 0.15, 17, 0.85 , 'GA')
+      , ( 2, 4, 12, 3, 10, 0.1, 108, 2.268, 'CO')
+      , ( 2, 5, 5, 4, 60, 0.0, 300, 18.60, 'CA')
+;
+
+
+
+IF OBJECT_ID('dbo.Salestax') IS NOT NULL
+  DROP TABLE dbo.Salestax;
+-- Create the sales tax table
+CREATE TABLE dbo.Salestax (
+   statecode VARCHAR(2) PRIMARY KEY,
+   taxamount NUMERIC(4, 3)
+  );
+GO
+-- insert sales tax data
+INSERT  dbo.Salestax
+        ( statecode, taxamount )
+VALUES  ( 'AK', 0.0714 ),
+        ( 'AL', 0.0214 ),
+        ( 'AR', 0.034 ),
+        ( 'AZ', 0.011 ),
+        ( 'CA', 0.062 ),
+        ( 'CO', 0.021 ),
+        ( 'CT', 0.064 ),
+        ( 'DE', 0.032 ),
+        ( 'FL', 0.06 ),
+        ( 'GA', 0.05 ),
+        ( 'HI', 0.08 ),
+        ( 'IA', 0.044 ),
+        ( 'ID', 0.031 ),
+        ( 'IL', 0.074 ),
+        ( 'IN', 0.071 ),
+        ( 'KS', 0.074 ),
+        ( 'KY', 0.074 ),
+        ( 'LA', 0.071 ),
+        ( 'MA', 0.071 ),
+        ( 'MD', 0.071 ),
+        ( 'ME', 0.074 ),
+        ( 'MI', 0.0714 ),
+        ( 'MN', 0.0714 ),
+        ( 'MO', 0.0714 ),
+        ( 'MS', 0.0714 ),
+        ( 'MT', 0.0714 ),
+        ( 'NC', 0.0714 ),
+        ( 'ND', 0.0714 ),
+        ( 'NE', 0.0714 ),
+        ( 'NH', 0.0714 ),
+        ( 'NJ', 0.0714 ),
+        ( 'NM', 0.0714 ),
+        ( 'NV', 0.0714 ),
+        ( 'NY', 0.0714 ),
+        ( 'OH', 0.0714 ),
+        ( 'OK', 0.0714 ),
+        ( 'OR', 0.0714 ),
+        ( 'PA', 0.02 ),
+        ( 'RI', 0.0714 ),
+        ( 'SC', 0.0714 ),
+        ( 'SD', 0.0714 ),
+        ( 'TN', 0.0714 ),
+        ( 'TX', 0.0714 ),
+        ( 'UT', 0.0714 ),
+        ( 'VA', 0.0714 ),
+        ( 'VT', 0.074 ),
+        ( 'WA', 0.071 ),
+        ( 'WI', 0.024 ),
+        ( 'WV', 0.014 ),
+        ( 'WY', 0.014 );
+GO
+-- create unique index
+CREATE UNIQUE INDEX IX_RegionTax ON dbo.Salestax (statecode, taxamount) 
+GO
+
+IF OBJECT_ID('dbo.CalcSalesTaxForSale') IS NOT NULL
+  DROP FUNCTION dbo.CalcSalesTaxForSale;
+GO
+-- create salestax calculation procedure
+CREATE FUNCTION dbo.CalcSalesTaxForSale (
+   @state CHAR(2),
+   @amount NUMERIC(12, 3)
+  )
+RETURNS NUMERIC(12, 3)
+AS
+BEGIN
+  DECLARE @tax NUMERIC(12, 3);
+
+  SELECT  @tax = @amount * CASE WHEN @state = 'AK' THEN 0.05
+                                WHEN @state = 'AL' THEN 0.02
+                                WHEN @state = 'AR' THEN 0.04
+                                WHEN @state = 'AZ' THEN 0.04
+                                WHEN @state = 'CA' THEN 0.04
+                                WHEN @state = 'CO' THEN 0.04
+                                WHEN @state = 'CT' THEN 0.04
+                                WHEN @state = 'DE' THEN 0.04
+                                WHEN @state = 'FL' THEN 0.04
+                                WHEN @state = 'GA' THEN 0.04
+                                WHEN @state = 'HI' THEN 0.04
+                                WHEN @state = 'IA' THEN 0.04
+                                WHEN @state = 'ID' THEN 0.04
+                                WHEN @state = 'IL' THEN 0.04
+                                WHEN @state = 'IN' THEN 0.04
+                                WHEN @state = 'KS' THEN 0.04
+                                WHEN @state = 'KY' THEN 0.04
+                                WHEN @state = 'LA' THEN 0.04
+                                WHEN @state = 'MA' THEN 0.04
+                                WHEN @state = 'MD' THEN 0.04
+                                WHEN @state = 'ME' THEN 0.04
+                                WHEN @state = 'MI' THEN 0.04
+                                WHEN @state = 'MN' THEN 0.04
+                                WHEN @state = 'MO' THEN 0.04
+                                WHEN @state = 'MS' THEN 0.04
+                                WHEN @state = 'MT' THEN 0.04
+                                WHEN @state = 'NC' THEN 0.04
+                                WHEN @state = 'ND' THEN 0.04
+                                WHEN @state = 'NE' THEN 0.04
+                                WHEN @state = 'NH' THEN 0.04
+                                WHEN @state = 'NJ' THEN 0.04
+                                WHEN @state = 'NM' THEN 0.04
+                                WHEN @state = 'NV' THEN 0.04
+                                WHEN @state = 'NY' THEN 0.04
+                                WHEN @state = 'OH' THEN 0.04
+                                WHEN @state = 'OK' THEN 0.04
+                                WHEN @state = 'OR' THEN 0.04
+                                WHEN @state = 'PS' THEN 0.02
+                                WHEN @state = 'RI' THEN 0.04
+                                WHEN @state = 'SC' THEN 0.04
+                                WHEN @state = 'SD' THEN 0.04
+                                WHEN @state = 'TN' THEN 0.04
+                                WHEN @state = 'TX' THEN 0.04
+                                WHEN @state = 'UT' THEN 0.04
+                                WHEN @state = 'VA' THEN 0.04
+                                WHEN @state = 'VT' THEN 0.04
+                                WHEN @state = 'WA' THEN 0.04
+                                WHEN @state = 'WI' THEN 0.04
+                                WHEN @state = 'WV' THEN 0.04
+                                WHEN @state = 'WY' THEN 0.04
+                           END;
+            
+  RETURN @tax; 
+
+END;
+GO
+IF OBJECT_ID('dbo.SetLocalTaxRate') IS NOT NULL DROP PROCEDURE dbo.SetLocalTaxRate;
+GO
+CREATE PROCEDURE dbo.SetLocalTaxRate
+  @OrderId INT
+AS
+BEGIN
+  UPDATE O 
+  SET
+         o.TaxAmount = o.LineTotal * dbo.CalcSalesTaxForSale(O.ShippingState,O.LineTotal)
+    FROM dbo.SalesOrderDetail AS O
+   WHERE O.SalesOrderDetailID = @OrderId;    
+END;
+GO
+
+EXEC tSQLt.NewTestClass 'LocalTaxForOrderTests';
+GO
+CREATE FUNCTION LocalTaxForOrderTests.[0.2 sales tax] (
+   @state CHAR(2),
+   @amount NUMERIC(12, 3)
+)
+RETURNS NUMERIC(12, 3)
+AS
+BEGIN
+  RETURN 0.2;
+END;
+GO
+CREATE PROCEDURE LocalTaxForOrderTests.[test dbo.SetLocalTaxRate updates correctly using dbo.CalcSalesTaxForSale]
+AS
+BEGIN
+  --Assemble
+  EXEC tSQLt.FakeTable @TableName = 'dbo.SalesOrderDetail';
+  EXEC tSQLt.FakeFunction 
+       @FunctionName = 'dbo.CalcSalesTaxForSale', 
+       @FakeFunctionName = 'LocalTaxForOrderTests.[0.2 sales tax]';
+
+  INSERT INTO dbo.SalesOrderDetail(SalesOrderDetailID,LineTotal,ShippingState)
+  VALUES(42,100,'PA');
+
+  --Act
+  EXEC dbo.SetLocalTaxRate @OrderId = 42;
+
+  --Assert
+  SELECT O.SalesOrderDetailID,O.TaxAmount
+  INTO #Actual
+  FROM dbo.SalesOrderDetail AS O;
+  
+  SELECT TOP(0) *
+  INTO #Expected
+  FROM #Actual;
+  
+  INSERT INTO #Expected
+  VALUES(42,20);
+
+  EXEC tSQLt.AssertEqualsTable '#Expected','#Actual';
+END;
+GO
+GO
