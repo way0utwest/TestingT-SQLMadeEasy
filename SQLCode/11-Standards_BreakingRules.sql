@@ -127,6 +127,7 @@ EXEC tsqlt.AssertEmptyTable @TableName = N'#actual', -- nvarchar(max)
 END
 
 
+GO
 
 
 

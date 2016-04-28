@@ -411,17 +411,6 @@ IF @@ERROR <> 0 SET NOEXEC ON
 GO
 PRINT N'Creating [dbo].[ContentItemsScheduledRelease]'
 GO
-CREATE TABLE [dbo].[ContentItemsScheduledRelease]
-(
-[contentItemID] [int] NULL,
-[ReleaseDate] [datetime] NULL,
-[released] [tinyint] NULL
-)
-GO
-IF @@ERROR <> 0 SET NOEXEC ON
-GO
-PRINT N'Creating [dbo].[ScheduleEntries]'
-GO
 CREATE TABLE [dbo].[ScheduleEntries]
 (
 [ScheduleEntryID] [int] NOT NULL IDENTITY(1, 1),
@@ -731,7 +720,25 @@ CREATE FUNCTION dbo.clrLoadFileMetadata
    RETURN REPLICATE('a', 50)
  END
  GO
+IF @@ERROR <> 0 SET NOEXEC ON
+GO
 
+IF OBJECT_ID('dbo.UF_CalcDiscountForSale') IS NOT NULL
+    DROP FUNCTION dbo.UF_CalcDiscountForSale;
+GO
+CREATE FUNCTION dbo.UF_CalcDiscountForSale ( @QtyPurchased INT )
+RETURNS NUMERIC(10 ,3)
+
+GO
+IF OBJECT_ID('dbo.UF_CalcDiscountForSale') IS NOT NULL
+  DROP FUNCTION dbo.clrLoadFileMetadata
+go
+CREATE FUNCTION dbo.clrLoadFileMetadata(@fileid int)
+RETURNS VARCHAR(200)
+AS
+BEGIN
+    RETURN 'This is a file summary.'
+END
 IF @@ERROR <> 0 SET NOEXEC ON
 GO
 COMMIT TRANSACTION
@@ -748,11 +755,7 @@ ELSE BEGIN
 END
 GO
 
-IF OBJECT_ID('dbo.UF_CalcDiscountForSale') IS NOT NULL
-    DROP FUNCTION dbo.UF_CalcDiscountForSale;
-GO
-CREATE FUNCTION dbo.UF_CalcDiscountForSale ( @QtyPurchased INT )
-RETURNS NUMERIC(10 ,3)
+
 /*
 -- Test Code
 
