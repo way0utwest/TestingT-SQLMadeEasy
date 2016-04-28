@@ -816,3 +816,44 @@ AS
     END
 
 GO
+
+
+/****** Object:  Table [dbo].[ScheduleEntries]    Script Date: 4/27/2016 5:23:17 PM ******/
+SET ANSI_NULLS ON
+GO
+
+SET QUOTED_IDENTIFIER ON
+GO
+
+CREATE TABLE [dbo].[ScheduleEntries](
+	[ScheduleEntryID] [INT] IDENTITY(1,1) NOT NULL,
+	[ContentItemID] [INT] NOT NULL,
+	[Site] [INT] NOT NULL,
+	[StartDate] [DATETIME] NOT NULL,
+	[EndDate] [DATETIME] NULL,
+	[SortOrder] [FLOAT] NULL,
+ CONSTRAINT [PK_ScheduleEntries] PRIMARY KEY CLUSTERED 
+(
+	[ScheduleEntryID] ASC
+)WITH (PAD_INDEX = OFF, STATISTICS_NORECOMPUTE = OFF, IGNORE_DUP_KEY = OFF, ALLOW_ROW_LOCKS = ON, ALLOW_PAGE_LOCKS = ON, FILLFACTOR = 99) ON [PRIMARY]
+) ON [PRIMARY]
+
+GO
+
+ALTER TABLE [dbo].[ScheduleEntries]  WITH CHECK ADD  CONSTRAINT [FK_ScheduleEntries_ContentItems] FOREIGN KEY([ContentItemID])
+REFERENCES [dbo].[ContentItems] ([ContentItemID])
+ON DELETE CASCADE
+GO
+
+ALTER TABLE [dbo].[ScheduleEntries] CHECK CONSTRAINT [FK_ScheduleEntries_ContentItems]
+GO
+
+
+CREATE TABLE UserTempPwd
+( UserID INT PRIMARY KEY
+, temppwd VARBINARY(MAX)
+, PasswordExpires DATETIME2(3)
+);
+GO
+
+
