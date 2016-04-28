@@ -15,5 +15,9 @@ GO
 IF NOT EXISTS( SELECT name FROM master.sys.databases WHERE name = 'TestingTSQL')
   CREATE DATABASE TestingTSQL
 GO
-
+ALTER DATABASE TestingTSQL SET TRUSTWORTHY ON;
+GO
+EXEC sp_configure 'clr enabled', 1
+GO
+reconfigure
 

@@ -149,3 +149,47 @@ BEGIN
 		End	
 END;
 GO
+
+
+EXEC tSQLt.NewTestClass 'LocalTaxForOrderTests';
+GO
+CREATE FUNCTION LocalTaxForOrderTests.[0.2 sales tax] (
+   @state CHAR(2),
+   @amount NUMERIC(12, 3)
+)
+RETURNS NUMERIC(12, 3)
+AS
+BEGIN
+  RETURN 0.2;
+END;
+GO
+CREATE PROCEDURE LocalTaxForOrderTests.[test dbo.SetLocalTaxRate updates correctly using dbo.CalcSalesTaxForSale]
+AS
+BEGIN
+  --Assemble
+  EXEC tSQLt.FakeTable @TableName = 'dbo.SalesOrderDetail';
+  EXEC tSQLt.FakeFunction 
+       @FunctionName = 'dbo.CalcSalesTaxForSale', 
+       @FakeFunctionName = 'LocalTaxForOrderTests.[0.2 sales tax]';
+
+  INSERT INTO dbo.SalesOrderDetail(SalesOrderDetailID,LineTotal,ShippingState)
+  VALUES(42,100,'PA');
+
+  --Act
+  EXEC dbo.SetLocalTaxRate @OrderId = 42;
+
+  --Assert
+  SELECT O.SalesOrderDetailID,O.TaxAmount
+  INTO #Actual
+  FROM dbo.SalesOrderDetail AS O;
+  
+  SELECT TOP(0) *
+  INTO #Expected
+  FROM #Actual;
+  
+  INSERT INTO #Expected
+  VALUES(42,20);
+
+  EXEC tSQLt.AssertEqualsTable '#Expected','#Actual';
+END;
+GO

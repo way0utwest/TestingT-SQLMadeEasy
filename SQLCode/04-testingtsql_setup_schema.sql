@@ -354,7 +354,7 @@ BEGIN
 	FROM Tags t
 	INNER JOIN dbo.TagMappings tm ON t.TagID = tm.TagID
 	INNER JOIN dbo.Articles a ON tm.ContentItemID = a.ContentItemID
-	GROUP BY t.TagText, t.TagID
+	GROUP BY t.TagText, t.TagID, t.Status
 	ORDER BY CASE t.TagText WHEN 'Video' THEN 1 ELSE 0 END DESC, COUNT(a.ContentItemID) DESC
 	
 END ELSE IF @ContentType = 'Script' 
@@ -365,7 +365,7 @@ BEGIN
 	FROM Tags t
 	INNER JOIN dbo.TagMappings tm ON t.TagID = tm.TagID
 	INNER JOIN dbo.Scripts s ON tm.ContentItemID = s.ContentItemID
-	GROUP BY t.TagText, t.TagID
+	GROUP BY t.TagText, t.TagID, t.status
 	ORDER BY COUNT(s.ContentItemID) DESC									
 END	ELSE BEGIN
 	SELECT t.TagID
@@ -374,7 +374,7 @@ END	ELSE BEGIN
 	FROM Tags t
 	INNER JOIN dbo.TagMappings tm ON t.TagID = tm.TagID
 	INNER JOIN dbo.ContentItems c ON tm.ContentItemID = c.ContentItemID
-	GROUP BY t.TagText, t.TagID
+	GROUP BY t.TagText, t.TagID, t.Status
 	ORDER BY COUNT(c.ContentItemID) DESC															
 END
 	
@@ -442,49 +442,8 @@ IF @@ERROR <> 0 SET NOEXEC ON
 GO
 PRINT N'Creating [dbo].[GetTagMappingsData]'
 GO
-CREATE FUNCTION [dbo].[GetTagMappingsData] 
-(	
-	-- Add the parameters for the function here
-	@tagID int
-)
-RETURNS TABLE 
-AS
-RETURN 
-(
-	-- Add the SELECT statement with parameter references here
-	SELECT ci.[ContentItemID], 
-	COUNT(tm.[TagID]) AS NumMappings
-	FROM [ContentItems] ci
-	LEFT OUTER JOIN [TagMappings] tm ON ci.[ContentItemID] = tm.[ContentItemID] AND tm.[TagID]=@tagID
-	GROUP BY ci.[ContentItemID]
-)
-GO
-IF @@ERROR <> 0 SET NOEXEC ON
-GO
-PRINT N'Creating [dbo].[GetTagMappingsWithMeanData]'
-GO
--- =============================================
--- Author:		Name
--- Create date: 
--- Description:	
--- =============================================
-CREATE FUNCTION [dbo].[GetTagMappingsWithMeanData] 
-(	
-	-- Add the parameters for the function here
-	@tagID int
-)
-RETURNS TABLE 
-AS
-RETURN 
-(
-	SELECT tmd.ContentItemID, tmd.NumMappings, AVG(tmd2.NumMappings*1000.0)/1000.0 MeanNumMappings
-	FROM GetTagMappingsData(2) tmd
-	JOIN (SELECT * FROM GetTagMappingsData(@tagID)) tmd2 ON 1=1
-	GROUP BY tmd.ContentItemID, tmd.NumMappings
-)
-GO
-IF @@ERROR <> 0 SET NOEXEC ON
-GO
+
+
 PRINT N'Creating [dbo].[MoveAllTagMappings]'
 GO
 CREATE PROCEDURE [dbo].[MoveAllTagMappings] 
@@ -825,28 +784,6 @@ GO
 SET QUOTED_IDENTIFIER ON
 GO
 
-CREATE TABLE [dbo].[ScheduleEntries](
-	[ScheduleEntryID] [INT] IDENTITY(1,1) NOT NULL,
-	[ContentItemID] [INT] NOT NULL,
-	[Site] [INT] NOT NULL,
-	[StartDate] [DATETIME] NOT NULL,
-	[EndDate] [DATETIME] NULL,
-	[SortOrder] [FLOAT] NULL,
- CONSTRAINT [PK_ScheduleEntries] PRIMARY KEY CLUSTERED 
-(
-	[ScheduleEntryID] ASC
-)WITH (PAD_INDEX = OFF, STATISTICS_NORECOMPUTE = OFF, IGNORE_DUP_KEY = OFF, ALLOW_ROW_LOCKS = ON, ALLOW_PAGE_LOCKS = ON, FILLFACTOR = 99) ON [PRIMARY]
-) ON [PRIMARY]
-
-GO
-
-ALTER TABLE [dbo].[ScheduleEntries]  WITH CHECK ADD  CONSTRAINT [FK_ScheduleEntries_ContentItems] FOREIGN KEY([ContentItemID])
-REFERENCES [dbo].[ContentItems] ([ContentItemID])
-ON DELETE CASCADE
-GO
-
-ALTER TABLE [dbo].[ScheduleEntries] CHECK CONSTRAINT [FK_ScheduleEntries_ContentItems]
-GO
 
 
 CREATE TABLE UserTempPwd
@@ -1030,46 +967,4 @@ BEGIN
 END;
 GO
 
-EXEC tSQLt.NewTestClass 'LocalTaxForOrderTests';
-GO
-CREATE FUNCTION LocalTaxForOrderTests.[0.2 sales tax] (
-   @state CHAR(2),
-   @amount NUMERIC(12, 3)
-)
-RETURNS NUMERIC(12, 3)
-AS
-BEGIN
-  RETURN 0.2;
-END;
-GO
-CREATE PROCEDURE LocalTaxForOrderTests.[test dbo.SetLocalTaxRate updates correctly using dbo.CalcSalesTaxForSale]
-AS
-BEGIN
-  --Assemble
-  EXEC tSQLt.FakeTable @TableName = 'dbo.SalesOrderDetail';
-  EXEC tSQLt.FakeFunction 
-       @FunctionName = 'dbo.CalcSalesTaxForSale', 
-       @FakeFunctionName = 'LocalTaxForOrderTests.[0.2 sales tax]';
-
-  INSERT INTO dbo.SalesOrderDetail(SalesOrderDetailID,LineTotal,ShippingState)
-  VALUES(42,100,'PA');
-
-  --Act
-  EXEC dbo.SetLocalTaxRate @OrderId = 42;
-
-  --Assert
-  SELECT O.SalesOrderDetailID,O.TaxAmount
-  INTO #Actual
-  FROM dbo.SalesOrderDetail AS O;
-  
-  SELECT TOP(0) *
-  INTO #Expected
-  FROM #Actual;
-  
-  INSERT INTO #Expected
-  VALUES(42,20);
-
-  EXEC tSQLt.AssertEqualsTable '#Expected','#Actual';
-END;
-GO
 GO
