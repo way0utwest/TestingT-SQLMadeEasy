@@ -107,7 +107,7 @@ ALTER TABLE dbo.Files
  ADD FileSummary VARCHAR(1000) NULL
 GO
 UPDATE dbo.Files
- set FileSummary = a.MetaData
+ set FileSummary = a.Summary
  from Files f
   CROSS APPLY dbo.clrLoadFileMetadata(f.FileID) a
 GO
@@ -147,3 +147,9 @@ GO
 
 
 
+
+/*******************************************************************************
+*                                                                              *
+*                            END DEMO                                          *
+*                                                                              *
+********************************************************************************/
