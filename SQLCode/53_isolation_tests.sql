@@ -36,9 +36,18 @@ END;
 GO
 
 
+-- test this test
+EXEC tSQLt.run 'MonthlyEmailTests';
+GO
 
 
--- 
+
+
+
+
+
+
+-- test for a single user
 CREATE PROCEDURE MonthlyEmailTests.[test dbo.SendMonthlyNotificationEmail is called once for single recipient]
 AS
 BEGIN
@@ -65,6 +74,22 @@ BEGIN
   
 END;
 GO
+
+
+
+
+
+-- run
+EXEC tSQLt.Run 'MonthlyEmailTests';
+GO
+
+
+
+
+
+
+
+-- now check for multiplse
 CREATE PROCEDURE MonthlyEmailTests.[test dbo.SendMonthlyNotificationEmail is not called once each for a few recipients]
 -- alter PROCEDURE MonthlyEmailTests.[test dbo.SendMonthlyNotificationEmail is not called once each for a few recipients]
 AS
@@ -101,4 +126,3 @@ EXEC tsqlt.run 'MonthlyEmailTests';
 go
 
  
- -- get data from monthly

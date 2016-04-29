@@ -1,6 +1,5 @@
 /* 
-Raising Code Quality with Automated Testing
-0-1-Some Setup
+Testing T-SQL Made Easy - Isolation
 
 Copyright 2015, Sebastian Meine and Steve Jones
 
@@ -33,6 +32,9 @@ INSERT dbo.MonthlyNotificationRecipients
       , ('Uma', 'Andy@mycompany.com')
 	  , ('Deuce', 'deucey@alwaysfetching.org')
 
+go
+
+-- procedure to send emails
 CREATE PROCEDURE dbo.SendMonthlyNotificationEmail
   @recipient_name NVARCHAR(200),
   @recipient_email NVARCHAR(200)
@@ -41,6 +43,9 @@ BEGIN
   RAISERROR('TODO: Implement email functionality',16,10);
 END;
 GO
+
+
+-- Procedure to load emails and send
 CREATE PROCEDURE dbo.SendMonthlyNotifications
 AS
 BEGIN

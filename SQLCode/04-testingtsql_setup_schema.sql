@@ -730,15 +730,15 @@ CREATE FUNCTION dbo.UF_CalcDiscountForSale ( @QtyPurchased INT )
 RETURNS NUMERIC(10 ,3)
 
 GO
-IF OBJECT_ID('dbo.UF_CalcDiscountForSale') IS NOT NULL
+IF OBJECT_ID('dbo.clrLoadFileMetadata') IS NOT NULL
   DROP FUNCTION dbo.clrLoadFileMetadata
 go
 CREATE FUNCTION dbo.clrLoadFileMetadata(@fileid int)
-RETURNS VARCHAR(200)
+RETURNS TABLE
 AS
-BEGIN
-    RETURN 'This is a file summary.'
-END
+    RETURN 
+	( SELECT summary = 'This is a file summary.'
+	)
 IF @@ERROR <> 0 SET NOEXEC ON
 GO
 COMMIT TRANSACTION

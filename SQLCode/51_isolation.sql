@@ -73,6 +73,7 @@ BEGIN
                                 WHEN @state = 'OH' THEN 0.04
                                 WHEN @state = 'OK' THEN 0.04
                                 WHEN @state = 'OR' THEN 0.04
+--                                WHEN @state = 'PS' THEN 0.02
                                 WHEN @state = 'PA' THEN 0.04
                                 WHEN @state = 'RI' THEN 0.04
                                 WHEN @state = 'SC' THEN 0.04
@@ -96,11 +97,18 @@ GO
 
 
 
+
+
 -- let's test
 EXEC tsqlt.run '[LocalTaxForOrderTests]'
 GO
+-- still works
+-- we are not dependent on this function
 
---
+
+
+
+-- change the procedure
 ALTER PROCEDURE dbo.SetLocalTaxRate
   @OrderId INT
 AS
@@ -115,7 +123,7 @@ GO
 
 
 
-
+-- retest
 EXEC tsqlt.run '[LocalTaxForOrderTests]'
 GO
 
@@ -138,7 +146,8 @@ GO
 -- Look at the calculation. The function uses a different value
 -- The Line total has a discount, where the new proc being tested uses qty*price
 -- This is the current test code.
-ALTER PROCEDURE [LocalTaxForOrderTests].[test dbo.SetLocalTaxRate uses dbo.CalcSalesTaxForSale]
+CREATE PROCEDURE [LocalTaxForOrderTests].[test dbo.SetLocalTaxRate uses dbo.CalcSalesTaxForSale]
+-- ALTER PROCEDURE [LocalTaxForOrderTests].[test dbo.SetLocalTaxRate uses dbo.CalcSalesTaxForSale]
 AS
 BEGIN
   --Assemble
@@ -169,39 +178,23 @@ BEGIN
 END;
 go
 
--- We need to alter the procedure with new column data
-ALTER PROCEDURE [LocalTaxForOrderTests].[test dbo.SetLocalTaxRate uses dbo.CalcSalesTaxForSale]
+
+
+
+
+-- Let's examine the two sets of code
+ALTER PROCEDURE dbo.SetLocalTaxRate
+  @OrderId INT
 AS
 BEGIN
-  --Assemble
-  EXEC tSQLt.FakeTable @TableName = 'dbo.SalesOrderDetail';
-  EXEC tSQLt.FakeFunction 
-       @FunctionName = 'dbo.CalcSalesTaxForSale', 
-       @FakeFunctionName = 'LocalTaxForOrderTests.[0.2 sales tax]';
-
-  INSERT INTO dbo.SalesOrderDetail(SalesOrderDetailID,LineTotal,ShippingState, unitprice, OrderQuantity)
-  VALUES(42,100,'PA', 20, 5);
-
-  --Act
-  EXEC dbo.SetLocalTaxRate @OrderId = 42;
-
-  --Assert
-  SELECT sod.SalesOrderDetailID,sod.TaxAmount
-  INTO #Actual
-  FROM dbo.SalesOrderDetail AS sod;
-  
-  SELECT TOP(0) *
-  INTO #Expected
-  FROM #Actual;
-  
-  INSERT INTO #Expected
-  VALUES(42,20);
-
-  EXEC tSQLt.AssertEqualsTable '#Expected','#Actual';
+  UPDATE O 
+  SET
+         o.TaxAmount = (o.OrderQuantity * o.UnitPrice) * dbo.CalcSalesTaxForSale(O.ShippingState,o.OrderQuantity * o.UnitPrice)
+    FROM dbo.SalesOrderDetail AS O
+   WHERE O.SalesOrderDetailID = @OrderId;    
 END;
-go
 
-
+GO
 
 
 
@@ -255,7 +248,6 @@ AS
           , @ShippingState
 
 
-    CLOSE ALL SYMMETRIC KEYS;
   END
 
 -- we are calculating tax on the discount amount.
@@ -264,6 +256,9 @@ AS
 -- We are preventing potential bugs or other issues in the future by catching issues early.
 
 
+
+-- re-test
+EXEC tsqlt.run '[LocalTaxForOrderTests]'
 
 
 /*******************************************************************************

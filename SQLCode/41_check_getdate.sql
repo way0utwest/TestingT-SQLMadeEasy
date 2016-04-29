@@ -18,7 +18,7 @@ CREATE PROCEDURE dbo.GetCurrentHeadlines
 AS
 BEGIN
 
-SELECT TOP 10
+SELECT TOP 5
 	ci.ContentItemID
    ,ci.Title
    ,ci.ExternalURL
@@ -33,7 +33,9 @@ END
 GO
 
 
-
+-- run
+EXEC dbo.GetCurrentHeadlines
+GO
 
 
 
@@ -57,8 +59,46 @@ GO
 
 
 
+-- this means changing code:
+ALTER PROCEDURE dbo.GetCurrentHeadlines
+AS
+  BEGIN
+    SELECT TOP 5
+        ci.ContentItemID
+      , ci.Title
+      , ci.ExternalURL
+      , se.StartDate
+      FROM
+        dbo.ContentItems AS ci
+      INNER JOIN dbo.ScheduleEntries AS se
+      ON
+        se.ContentItemID = ci.ContentItemID
+      WHERE
+        se.StartDate <= dbo.GetCurrentDate()
+      ORDER BY
+        se.StartDate desc
 
--- this allows us to upgrade
+  END
+GO
+
+
+
+
+
+
+
+
+
+-- run
+EXEC dbo.GetCurrentHeadlines
+GO
+
+
+
+
+
+
+-- But, this allows us to upgrade
 ALTER FUNCTION GetCurrentDate()
  RETURNS datetime2(3)
  AS
@@ -72,27 +112,15 @@ GO
 
 
 
--- this means changing code:
-ALTER PROCEDURE dbo.GetCurrentHeadlines
-AS
-  BEGIN
-    SELECT TOP 10
-        ci.ContentItemID
-      , ci.Title
-      , ci.ExternalURL
-      , se.StartDate
-      FROM
-        dbo.ContentItems AS ci
-      INNER JOIN dbo.ScheduleEntries AS se
-      ON
-        se.ContentItemID = ci.ContentItemID
-      WHERE
-        se.StartDate <= dbo.GetCurrentDate()
-      ORDER BY
-        se.StartDate
 
-  END
+
+
+
+-- run
+EXEC dbo.GetCurrentHeadlines
 GO
+
+
 
 
 
@@ -152,12 +180,7 @@ CREATE TABLE #expected
  ) 
  
  INSERT #expected
- VALUES (1, 'Test 1', 'http://someurl.com/1/'   , '20160102')
-      , (2, 'Test 2', 'http://someurl.com/2/'   , '20160103')
-      , (3, 'Test 3', 'http://someurl.com/3/'   , '20160104')
-      , (4, 'Test 4', 'http://someurl.com/4/'   , '20160106')
-      , (5, 'Test 5', 'http://someurl.com/5/'   , '20160107')
-      , (6, 'Test 6', 'http://someurl.com/6/'   , '20160108')
+ VALUES (6, 'Test 6', 'http://someurl.com/6/'   , '20160108')
       , (7, 'Test 7', 'http://someurl.com/7/'   , '20160109')
       , (8, 'Test 8', 'http://someurl.com/8/'   , '20160110')
       , (9, 'Test 9', 'http://someurl.com/9/'   , '20160112')
@@ -189,12 +212,18 @@ EXEC tsqlt.FakeFunction
 END
 GO
 
+/*********************************************************************
+End test
+**********************************************************************/
+
 CREATE FUNCTION dbo.GetDate20160113()
 RETURNS DATETIME2(3)
 AS
 BEGIN
  RETURN CAST('20160113' AS DATETIME)
 END
+
+
 
 
 -- run the test
@@ -220,6 +249,8 @@ BEGIN
  RETURN CAST('20160112' AS DATETIME)
 END
 GO
+
+
 -- retest
 EXEC tsqlt.run '[tContentItemTests].[test Check GetCurrentHeadlines for Current item]';
 go
@@ -236,6 +267,9 @@ BEGIN
 END
 GO
 
+-- test
+EXEC tsqlt.run '[tContentItemTests].[test Check GetCurrentHeadlines for Current item]';
+go
 
 
 
@@ -270,30 +304,34 @@ GO
 
 
 -- DROP  PROCEDURE dbo.ResetPassword
-CREATE PROCEDURE dbo.ResetPassword
-  @userid INT
- AS
- BEGIN
+CREATE PROCEDURE dbo.ResetPassword @userid INT
+AS
+    BEGIN
  
-DECLARE @newpwd VARCHAR(20) = ''
+        DECLARE @newpwd VARCHAR(20) = ''
 
-EXEC [dbo].uspRandChars
-  @len = 8
-, @output = @newpwd OUT
+        EXEC [dbo].uspRandChars
+            @len = 8
+          , @output = @newpwd OUT
 
-DELETE dbo.UserTempPwd
- WHERE UserID = @userid;
+        DELETE
+                dbo.UserTempPwd
+            WHERE
+                UserID = @userid;
 
- INSERT dbo.UserTempPwd
-  VALUES (@userid, HASHBYTES('SHA2_512', @newpwd), DATEADD(MINUTE, 15, GETDATE()))
+        INSERT dbo.UserTempPwd
+            VALUES
+                ( @userid, HASHBYTES('SHA2_512', @newpwd),
+                  DATEADD(MINUTE, 15, GETDATE()) )
 
- END
+    END
 GO
 
 -- test
 SELECT top 10
   *
  FROM dbo.UserTempPwd AS utp
+ WHERE utp.UserID = 12
 GO
 EXEC dbo.ResetPassword
   @userid = 12;
@@ -301,6 +339,7 @@ GO
 SELECT top 10
   *
  FROM dbo.UserTempPwd AS utp
+ WHERE utp.UserID = 12
 go
 
 
@@ -311,7 +350,7 @@ go
  -- works
  -- how to we test?
  -- Use Bracking
- EXEC tsqlt.NewTestClass
+EXEC tsqlt.NewTestClass
    @ClassName = N'tSecurityTests';
 go 
 CREATE PROCEDURE [tSecurityTests].[test password reset timeout]
@@ -356,9 +395,14 @@ GO
 
 
 
+
+
 -- check the tests
 EXEC tsqlt.run '[tSecurityTests].[test password reset timeout]';
 go
+
+
+
 
 
 
@@ -383,6 +427,8 @@ DELETE dbo.UserTempPwd
 
  END
 GO
+
+
 
 
 
