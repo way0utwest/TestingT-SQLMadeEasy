@@ -106,9 +106,17 @@ GO
 
 
 
+
+
+
 -- test
 EXEC tsqlt.run '[tContentTests].[test GetArticleHeadlines for headlines and ratings, and views]';
 GO
+
+
+
+
+
 
 
 

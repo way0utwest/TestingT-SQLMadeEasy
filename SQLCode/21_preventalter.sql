@@ -130,7 +130,11 @@ GO
 
 
 
+
+
 -- Failure
+
+
 
 
 
@@ -143,6 +147,14 @@ GO
 -- Now what?
 -- schedule meeting
 -- discuss strategies (maintenance window, time required for deployment)
+
+
+-- We DO NOT want an exception here. We want this test to fail, and if the change is approved, the test is altered to allow
+-- this change, but prevent future ones.
+
+-- Note, this means you need some control over when/how this test is run.
+
+
 
 
 

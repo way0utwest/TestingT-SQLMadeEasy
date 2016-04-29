@@ -104,7 +104,8 @@ EXEC tsqlt.run '[LocalTaxForOrderTests]'
 GO
 -- still works
 -- we are not dependent on this function
-
+-- check test
+-- we could have a function for this test, but it's really trivial. We'd be testing data.
 
 
 
@@ -196,21 +197,6 @@ END;
 
 GO
 
-
-
-
--- Rerun the test
-EXEC tsqlt.run '[LocalTaxForOrderTests]'
-
-
-
-
-
-
-
-
-
-
 -- Examine the Procedure at the top.
 -- We are using the LineTotal column only here.
 -- We need to refactor the test, but this should concern us. Is there other code that depends on the 
@@ -257,9 +243,80 @@ AS
 
 
 
+
+
+
+
+ALTER PROCEDURE [LocalTaxForOrderTests].[test dbo.SetLocalTaxRate uses dbo.CalcSalesTaxForSale]
+AS
+BEGIN
+  --Assemble
+  EXEC tSQLt.FakeTable @TableName = 'dbo.SalesOrderDetail';
+  EXEC tSQLt.FakeFunction 
+       @FunctionName = 'dbo.CalcSalesTaxForSale', 
+       @FakeFunctionName = 'LocalTaxForOrderTests.[0.2 sales tax]';
+
+  INSERT INTO dbo.SalesOrderDetail(SalesOrderDetailID,LineTotal, OrderQuantity, UnitPrice ,ShippingState)
+  VALUES(42,100, 20, 5,'PA');
+
+  --Act
+  EXEC dbo.SetLocalTaxRate @OrderId = 42;
+
+  --Assert
+  SELECT sod.SalesOrderDetailID,sod.TaxAmount
+  INTO #Actual
+  FROM dbo.SalesOrderDetail AS sod;
+  
+  SELECT TOP(0) *
+  INTO #Expected
+  FROM #Actual;
+  
+  INSERT INTO #Expected
+  VALUES(42,20);
+
+  EXEC tSQLt.AssertEqualsTable '#Expected','#Actual';
+END;
+go
+
+
+ALTER PROCEDURE [LocalTaxForOrderTests].[test dbo.SetLocalTaxRate updates correctly using dbo.CalcSalesTaxForSale]
+AS
+BEGIN
+  --Assemble
+  EXEC tSQLt.FakeTable @TableName = 'dbo.SalesOrderDetail';
+  EXEC tSQLt.FakeFunction 
+       @FunctionName = 'dbo.CalcSalesTaxForSale', 
+       @FakeFunctionName = 'LocalTaxForOrderTests.[0.2 sales tax]';
+
+  INSERT INTO dbo.SalesOrderDetail(SalesOrderDetailID,LineTotal, OrderQuantity, UnitPrice,ShippingState)
+  VALUES(42,100,5, 20, 'PA');
+
+  --Act
+  EXEC dbo.SetLocalTaxRate @OrderId = 42;
+
+  --Assert
+  SELECT O.SalesOrderDetailID,O.TaxAmount
+  INTO #Actual
+  FROM dbo.SalesOrderDetail AS O;
+  
+  SELECT TOP(0) *
+  INTO #Expected
+  FROM #Actual;
+  
+  INSERT INTO #Expected
+  VALUES(42,20);
+
+  EXEC tSQLt.AssertEqualsTable '#Expected','#Actual';
+END;
+GO
+
+
+
+
+
 -- re-test
 EXEC tsqlt.run '[LocalTaxForOrderTests]'
-
+go
 
 /*******************************************************************************
 *                                                                              *

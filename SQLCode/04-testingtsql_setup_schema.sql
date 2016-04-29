@@ -728,7 +728,20 @@ IF OBJECT_ID('dbo.UF_CalcDiscountForSale') IS NOT NULL
 GO
 CREATE FUNCTION dbo.UF_CalcDiscountForSale ( @QtyPurchased INT )
 RETURNS NUMERIC(10 ,3)
+AS
+    BEGIN
+        DECLARE @i NUMERIC(10,3);
 
+        SELECT  @i = CASE WHEN ( @QtyPurchased > 101 ) THEN 0.1
+                          WHEN ( @QtyPurchased > 20 ) AND (@QtyPurchased < 100)
+                               THEN 0.05
+                          ELSE 0.0
+                     END
+
+        RETURN @i
+    END
+
+GO
 GO
 IF OBJECT_ID('dbo.clrLoadFileMetadata') IS NOT NULL
   DROP FUNCTION dbo.clrLoadFileMetadata
@@ -739,6 +752,7 @@ AS
     RETURN 
 	( SELECT summary = 'This is a file summary.'
 	)
+go
 IF @@ERROR <> 0 SET NOEXEC ON
 GO
 COMMIT TRANSACTION
@@ -756,28 +770,6 @@ END
 GO
 
 
-/*
--- Test Code
-
-select dbo.UF_CalcDiscountForSale(10);
-select dbo.UF_CalcDiscountForSale(25);
-select dbo.UF_CalcDiscountForSale(125);
-
-*/
-AS
-    BEGIN
-        DECLARE @i NUMERIC(10,3);
-
-        SELECT  @i = CASE WHEN ( @QtyPurchased > 101 ) THEN 0.1
-                          WHEN ( @QtyPurchased > 20 ) AND (@QtyPurchased < 100)
-                               THEN 0.05
-                          ELSE 0.0
-                     END
-
-        RETURN @i
-    END
-
-GO
 
 
 /****** Object:  Table [dbo].[ScheduleEntries]    Script Date: 4/27/2016 5:23:17 PM ******/

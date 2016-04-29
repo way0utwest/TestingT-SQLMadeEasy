@@ -27,7 +27,7 @@ SELECT TOP 5
   INNER JOIN dbo.ScheduleEntries AS se
   ON se.ContentItemID = ci.ContentItemID
   WHERE se.StartDate <= GETDATE()
-  ORDER BY se.Startdate
+  ORDER BY se.Startdate desc
  
 END
 GO
@@ -98,7 +98,7 @@ GO
 
 
 
--- But, this allows us to upgrade
+-- But this allows us to upgrade
 ALTER FUNCTION GetCurrentDate()
  RETURNS datetime2(3)
  AS
@@ -193,7 +193,9 @@ CREATE TABLE #actual
  , StartDate DATETIME
  ) 
 
-
+--------------------------------------------------------
+-- This is the important part
+--------------------------------------------------------
 EXEC tsqlt.FakeFunction
   @FunctionName = N'dbo.GetCurrentDate'
 , @FakeFunctionName = N'dbo.GetDate20160113';
@@ -301,6 +303,15 @@ AS
         END
     END;
 GO
+-- test
+DECLARE @o VARCHAR(50) = '';
+EXEC dbo.uspRandChars
+  @len = 8
+, @output = @o OUTPUT
+;
+SELECT @o;
+GO
+
 
 
 -- DROP  PROCEDURE dbo.ResetPassword
@@ -319,10 +330,13 @@ AS
             WHERE
                 UserID = @userid;
 
+------------------------------------
+-- Note the time
+------------------------------------
         INSERT dbo.UserTempPwd
             VALUES
                 ( @userid, HASHBYTES('SHA2_512', @newpwd),
-                  DATEADD(MINUTE, 15, GETDATE()) )
+                  DATEADD(MINUTE, 15, SYSDATETIME()) )
 
     END
 GO
